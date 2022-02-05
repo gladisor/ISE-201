@@ -1,0 +1,55 @@
+---
+title: "Exploratory Data Analysis"
+author: "Tristan Shah"
+date: "2/4/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Packages
+```{r}
+library(tidyverse)
+```
+
+### Data
+
+The data set I have chosen for this EDA is ChickWeight. It is a four column tabular data set containing 578 data points. This data was created by measuring the weight of newborn chicks every other day from their birth to 20 days thereafter (and on day 21). Different diets were supplied to groups of chicks to measure the respective weight change.
+
+```{r}
+data("ChickWeight")
+
+## Converting data to tibble and setting columns to integers
+ChickWeight %>% 
+  tibble %>%
+  mutate_all(as.integer) -> chick_data
+
+## Display the data
+head(chick_data)
+```
+
+### Questions:
+
+1.) Is there a complete sequence of weights for each chicken of 21 days?
+
+2.) Is there a difference in weight gain on average for each feed type?
+
+3.) What is the distribution of starting chick weights? What is the distribution of end chick weights?
+
+4.) Which factor is more influential to the end weight: initial weight on day 0 or feed type?
+
+
+```{r}
+ggplot(
+  data = chick_data,
+  mapping = aes(Time, weight, color=Diet)) + geom_point()
+```
+
+```{r}
+chick_data %>% 
+  group_by(Diet, Time) %>%
+  mutate(avg_chick_weight = mean(weight)) %>%
+  select(Time, Diet, avg_chick_weight)
+```
