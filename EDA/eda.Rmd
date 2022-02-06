@@ -5,16 +5,12 @@ date: "2/4/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-### Packages
-```{r}
+## Packages
+```{r message=FALSE}
 library(tidyverse)
 ```
 
-### Data
+## Data
 
 The data set I have chosen for this EDA is ChickWeight. It is a four column tabular data set containing 578 data points. This data was created by measuring the weight of newborn chicks every other day from their birth to 20 days thereafter (and on day 21). Different diets were supplied to groups of chicks to measure the respective weight change.
 
@@ -30,7 +26,7 @@ ChickWeight %>%
 head(chick_data)
 ```
 
-### Questions:
+## Questions:
 
 1.) Is there a complete sequence of weights for each chicken of 21 days?
 
@@ -40,16 +36,79 @@ head(chick_data)
 
 4.) Which factor is more influential to the end weight: initial weight on day 0 or feed type?
 
+### Is there a complete sequence of weights for each chicken of 21 days?
+
+In order to answer this question we need to group the data by chick number and visualize the number of days that it has been on its diet since birth. If we see chicks which did not complete the experiment they must be removed.
 
 ```{r}
-ggplot(
-  data = chick_data,
-  mapping = aes(Time, weight, color=Diet)) + geom_point()
+chick_data %>%
+  group_by(Chick) %>%
+  summarise(num_days = length(Time)) -> num_days_by_chick
+
+barplot(
+  height = num_days_by_chick$num_days,
+  names.arg = num_days_by_chick$Chick,
+  xlab = "Chick number",
+  ylab = "Number of days",
+  main = "Days on diet since birth")
 ```
+
+We can see that several of the chicks have not completed the experiment. We will use a filter function to remove those chicks from the data set.
+
+```{r}
+chick_data %>%
+  group_by(Chick) %>%
+  filter(length(Time) == max(num_days_by_chick$num_days)) %>%
+  ungroup() -> chick_data
+```
+
+Now that we have determined that not all chicks have completed the experiment and filtered those out of the data set we can proceed with the next question.
+
+### Is there a difference in weight gain on average for each feed type?
+
+In order to answer this question we must find the average weight of chicks for each feed type per day.
+
+First let us determine if there are an even number of chicks for each type of feed.
+
+```{r}
+chick_data %>%
+  group_by(Diet) %>%
+  summarise(num_chicks = length(Chick))
+```
+
+There is a significant imbalance for feed types 1 and 4. Unfortunately I am not sure how to handle this but it is important to be aware. We will now prepare a plot of the average weight per feed type per day.
+
+We will group by Diet and day, then take the average of the chick weights and store it in a new variable.
 
 ```{r}
 chick_data %>% 
-  group_by(Diet, Time) %>%
-  mutate(avg_chick_weight = mean(weight)) %>%
-  select(Time, Diet, avg_chick_weight)
+  group_by(Diet, Time) %>% 
+  summarise(avg_chick_weight = mean(weight)) -> avg_chick_weight_by_diet
+
+avg_chick_weight_by_diet
 ```
+
+The average weight looks to be increasing for each Diet type. We will now create a scatter plot of the says (x axis) vs the average weight of the chicks. Color will be used to differentiate the feed types.
+
+```{r}
+## Creating plot
+ggplot(
+  data = avg_chick_weight_by_diet, 
+  mapping = aes(
+    x = Time, 
+    y = avg_chick_weight,
+    color = as.factor(Diet))) -> avg_chick_weight_plot
+
+## Styling plot
+avg_chick_weight_plot + 
+  geom_point() + 
+  labs(
+    x = "Time (days)",
+    y = "Average weight of chicks (grams)",
+    color = "Diet (feed type)",
+    title = "Average chick weight over time comparing feed type") + 
+  scale_color_brewer(palette = "Dark2")
+```
+
+Given that there is an imbalance in sample size for each feed type it is difficult to accurately draw conclusions from the results. However, from this graph it is apparent that feed types 3 and 4 outperform 2 and 1 significantly. By the end of the 21 day period the chicks who were fed Diet number 3 weigh over 250 grams. Furthermore, chicks consuming feed type 3 seem to be continuing their growth while those consuming feed type 1 are plateauing.
+
