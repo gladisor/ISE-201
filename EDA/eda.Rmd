@@ -8,6 +8,7 @@ output: html_document
 ## Packages
 ```{r message=FALSE}
 library(tidyverse)
+library(patchwork)
 ```
 
 ## Data
@@ -30,11 +31,11 @@ head(chick_data)
 
 1.) Is there a complete sequence of weights for each chicken of 21 days?
 
-2.) Is there a difference in weight gain on average for each feed type?
+2.) Are there an equal number of datapoints for each diet?
 
-3.) What is the distribution of starting chick weights? What is the distribution of end chick weights?
+3.) Is there a difference in weight gain on average for each feed type?
 
-4.) Which factor is more influential to the end weight: initial weight on day 0 or feed type?
+4.) What is the distribution of starting chick weights? What is the distribution of end chick weights?
 
 ### Is there a complete sequence of weights for each chicken of 21 days?
 
@@ -64,11 +65,9 @@ chick_data %>%
 
 Now that we have determined that not all chicks have completed the experiment and filtered those out of the data set we can proceed with the next question.
 
-### Is there a difference in weight gain on average for each feed type?
+### Are there an equal number of datapoints for each diet?
 
-In order to answer this question we must find the average weight of chicks for each feed type per day.
-
-First let us determine if there are an even number of chicks for each type of feed.
+We can grup by diet and measure the length of an attribute in the table.
 
 ```{r}
 chick_data %>%
@@ -76,9 +75,17 @@ chick_data %>%
   summarise(num_chicks = length(Chick))
 ```
 
-There is a significant imbalance for feed types 1 and 4. Unfortunately I am not sure how to handle this but it is important to be aware. We will now prepare a plot of the average weight per feed type per day.
+There is a significant imbalance for feed types 1 and 4. This difference can be visualized with a histogram.
 
-We will group by Diet and day, then take the average of the chick weights and store it in a new variable.
+```{r}
+ggplot(chick_data, aes(x = Diet)) + geom_histogram(bins = 4, binwidth = 0.5)
+```
+
+This bar plot highlights the large number of samples for Diet #1. While the rest of the diets have a similar number of data points. In future analysis we can utilize this knowledge to include confidence bands based on the sample size for plotting weight.
+
+### Is there a difference in weight gain on average for each feed type?
+
+In order to answer this question we must find the average weight of chicks for each feed type per day. We will group by Diet and day, then take the average of the chick weights and store it in a new variable.
 
 ```{r}
 chick_data %>% 
@@ -112,3 +119,21 @@ avg_chick_weight_plot +
 
 Given that there is an imbalance in sample size for each feed type it is difficult to accurately draw conclusions from the results. However, from this graph it is apparent that feed types 3 and 4 outperform 2 and 1 significantly. By the end of the 21 day period the chicks who were fed Diet number 3 weigh over 250 grams. Furthermore, chicks consuming feed type 3 seem to be continuing their growth while those consuming feed type 1 are plateauing.
 
+### What is the distribution of starting chick weights? What is the distribution of end chick weights?
+
+To answer this question we need two vectors. The first vector will be the starting weight of all chicks on day 0. The second vector will be the end weight of the chicks on day 21. We will compute summary statistics on these vectors and plot the results.
+
+```{r}
+
+chick_data %>% 
+  filter(Time == 0) %>%
+  ggplot(aes(x=weight)) + geom_density() + labs(title = "Weight distribution day 0")-> day_0_dist
+
+chick_data %>%
+  filter(Time == 21) %>%
+  ggplot(aes(x=weight)) + geom_density() + labs(title = "Weight distribution day 21") -> day_21_dist
+
+day_0_dist / day_21_dist
+```
+
+The initial and final weight distributions are quite different in terms of overall weight as well as the shape. The distribution for the initial weight is much sharper and has a significant peak around 41 grams. The final weight distribution for day 21 spans a much larger range with a peak at 200 grams.
