@@ -1,0 +1,79 @@
+---
+title: "proposal"
+author: "Tristan Shah"
+date: "2/16/2022"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+## Introduction: What is your research question? Why do you care? Why should others care? If you know of any other related work done by others, please include a brief description.
+
+## Data: Include context about the data covering:
+
+## Data source: Include the citation for your data, and provide a link to the source.
+
+## Data collection: Context on how the data was collected?
+
+## Cases: What are the cases (units of observation or experiment)? What do the rows represent in your dataset?
+
+## Variables: What are the variables you will be studying?
+
+## Type of study: was it an observational study or an experiment?
+
+## Data Quality: Check for data quality issues, missing data, duplicates, format issues etc. and perform the necessary quality improvements. 
+
+## References: Any write-ups or analysis you might have referenced for this project.
+
+```{r}
+tibble(read.csv("san-jose-fire-incidents-data-2020.csv")) -> fires
+tibble(read.csv("fire_station_locations.csv")) -> stations
+```
+
+
+```{r}
+fires <- fires[complete.cases(fires), ]
+
+valid_stations <- unique(stations$STATION)
+
+## Filtering out stations with irregular names.
+## Also only selecting stations which are present in the "stations" dataset
+fires %>%
+  filter(nchar(Station) == 2) %>%
+  mutate(Station = as.integer(Station)) %>%
+  filter(Station %in% valid_stations) -> fires
+
+## Cleaning the Priority data to be of type int
+fires$Priority %>% 
+  strsplit(" ") %>% 
+  map_chr(2) %>% 
+  as.integer() -> fires$Priority
+
+## Cleaning lat and long
+fires$fire_long <- as.numeric(fires$Near_X)
+fires$fire_lat <- as.numeric(fires$Near_Y)
+
+
+fires[, c(
+  "fire_long", 
+  "fire_lat", 
+  "Priority", 
+  "Date_Time_Of_Event",
+  "Dispatched_Time",
+  "Unit_On_The_Way_Time",
+  "Cleared_TimeStamp",
+  "Final_Incident_Type",
+  "Final_Incident_Category")] -> fires
+
+## Creating logical vector which determines if any time column is missing a value
+fires$Date_Time_Of_Event != "" &
+  fires$Dispatched_Time != "" &
+  fires$Unit_On_The_Way_Time != "" &
+  fires$Cleared_TimeStamp != "" -> valid_times
+
+fires[valid_times,] -> fires
+
+fires
+```
