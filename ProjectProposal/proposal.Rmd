@@ -94,5 +94,9 @@ mutate(fires,
       Unit_On_The_Way_Time, 
       Cleared_TimeStamp), convert_timestamp)) -> fires
 
-fires$Dispatched_Time - fires$Date_Time_Of_Event
+time_to_dispatch <- fires$Dispatched_Time - fires$Date_Time_Of_Event
+dispatch_to_leave <- fires$Unit_On_The_Way_Time - fires$Dispatched_Time
+leave_to_cleared <- fires$Cleared_TimeStamp - fires$Unit_On_The_Way_Time
+
+sum(delta < 0, na.rm = T)
 ```
