@@ -34,12 +34,14 @@ tibble(read.csv("fire_station_locations.csv")) -> stations
 
 
 ```{r}
+## Dropping all incomplete rows
 fires <- fires[complete.cases(fires), ]
 
+## Obtaining vector of unique stations in the locations dataset
 valid_stations <- unique(stations$STATION)
 
 ## Filtering out stations with irregular names.
-## Also only selecting stations which are present in the "stations" dataset
+## Also only selecting stations which are present in the locations dataset
 fires %>%
   filter(nchar(Station) == 2) %>%
   mutate(Station = as.integer(Station)) %>%
@@ -55,7 +57,7 @@ fires$Priority %>%
 fires$fire_long <- as.numeric(fires$Near_X)
 fires$fire_lat <- as.numeric(fires$Near_Y)
 
-
+## Selecting columns of interest
 fires[, c(
   "fire_long", 
   "fire_lat", 
@@ -73,7 +75,24 @@ fires$Date_Time_Of_Event != "" &
   fires$Unit_On_The_Way_Time != "" &
   fires$Cleared_TimeStamp != "" -> valid_times
 
+## Removing rows with missing times
 fires[valid_times,] -> fires
 
-fires
+head(fires)
+```
+
+```{r}
+convert_timestamp <- function(time_column) {
+  return(strptime(time_column, format = "%m/%d/%Y %R %p"))
+}
+
+mutate(fires,
+  across(
+    c(
+      Date_Time_Of_Event, 
+      Dispatched_Time, 
+      Unit_On_The_Way_Time, 
+      Cleared_TimeStamp), convert_timestamp)) -> fires
+
+fires$Dispatched_Time - fires$Date_Time_Of_Event
 ```
